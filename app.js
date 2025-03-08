@@ -23,6 +23,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
 // To store images
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
@@ -32,17 +33,59 @@ mongoose.connect('mongodb+srv://sree:sree2002@cluster0.n63e6.mongodb.net/volunte
 });
 
 
-app.post("/create-pdf", async (req, res) => {
-  const certificateRequests = await CertificateRequestModel.findById(req.body)
-  // Generate a PDF using the provided data and the template
-  pdf.create(PDFTemplate(certificateRequests), {}).toFile("result.pdf", (err) => {
-    if (err) {
-      res.send(Promise.reject()); // If an error occurs, reject the request
-    }
 
-    res.send(Promise.resolve()); // If successful, send a resolved promise
-  });
+// CREATE PDF
+app.post("/create-pdf", async (req, res) => {
+  try {
+    const { jobId } = req.body; // More descriptive than just "id"
+
+    if (!jobId) {
+      return res.status(400).json({ error: "Job ID is required" });
+    }
+    // Fetch the job and populate assignedVolunteer with the name
+    const job = await jobmodel.findById(jobId).populate("assignedVolunteer", "name");
+
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    // Prepare certificate data
+    const certificateData = {
+      jobId: job._id,
+      title: job.title,
+      description: job.description,
+      duration: job.duration,
+      location: job.location,
+      date: job.date,
+      assignedVolunteer: job.assignedVolunteer ? job.assignedVolunteer.name : "Unknown"
+    };
+
+    // Generate the PDF
+    pdf.create(PDFTemplate(certificateData), {}).toFile("result.pdf", (err, result) => {
+      if (err) {
+        console.error("PDF Generation Error:", err);
+        return res.status(500).json({ error: "Error generating PDF" });
+      }
+      res.status(200).json({ message: "PDF created successfully", filePath: result.filename });
+    });
+
+  } catch (error) {
+    console.error("Server Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
+
+// app.post("/create-pdf", async (req, res) => {
+//   const certificateRequests = await jobmodel.findById(req.body)
+//   // Generate a PDF using the provided data and the template
+//   pdf.create(PDFTemplate(certificateRequests), {}).toFile("result.pdf", (err) => {
+//     if (err) {
+//       res.send(Promise.reject()); // If an error occurs, reject the request
+//     }
+
+//     res.send(Promise.resolve()); // If successful, send a resolved promise
+//   });
+// });
 
 
 /**
