@@ -10,8 +10,6 @@ const schema = new mongoose.Schema({
   accepted: { type: Boolean, default: false }, 
   rejected: { type: Boolean, default: false },
   status: { type: String, enum: ["request", "pending", "verified"]},
-
- 
 }, { timestamps: true });
 
 const jobmodel = mongoose.model("jobs", schema);

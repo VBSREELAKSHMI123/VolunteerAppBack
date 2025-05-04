@@ -5,7 +5,8 @@ const schema=mongoose.Schema(
         "email":String,
         "phone":String,
         "address":String,
-        "password":String
+        "password":String,
+        assignedVolunteer: { type: mongoose.Schema.Types.ObjectId, ref: 'volunteers' }
     }
 )
 
